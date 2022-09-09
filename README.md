@@ -29,6 +29,6 @@ Marie Sünnemann (1,2,*), Remy Beugnon (1,3,4), François Buscot (1,5), Simone C
 
 10 Department of Community Ecology, Helmholtz-Centre for Environmental Research – UFZ, Theodor-Lieser-Str. 4, 06120 Halle, Germany.
 
-* Corresponding author: marie.suennemann@idiv.de
+\* Corresponding author: marie.suennemann@idiv.de
 
 § senior authors
