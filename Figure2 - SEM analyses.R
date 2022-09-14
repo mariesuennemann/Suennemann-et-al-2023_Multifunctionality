@@ -1,5 +1,20 @@
 #### Info session ####
-
+## R.version
+##                _                           
+## platform       x86_64-w64-mingw32          
+## arch           x86_64                      
+## os             mingw32                     
+## system         x86_64, mingw32             
+## status                                     
+## major          4                           
+## minor          0.2                         
+## year           2020                        
+## month          06                          
+## day            22                          
+## svn rev        78730                       
+## language       R                           
+## version.string R version 4.0.2 (2020-06-22)
+## nickname       Taking Off Again
 
 #### Packages ####
 packs = c(
