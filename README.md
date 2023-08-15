@@ -1,4 +1,4 @@
-# Title: Climate change and intensive land use compromise soil multifunctionality
+# Title: Climate change and cropland management compromise soil multifunctionality
 
 DOI: (to be added once published)
 
