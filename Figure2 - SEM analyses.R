@@ -19,8 +19,8 @@
 #### Packages ####
 packs = c(
   'tidyverse',
-  'factoextra', 'lavaan','performance',
-  'lavaanPlot', 'magrittr', 'ggfortify'
+  'factoextra', 'piecewiseSEM','performance',
+  'glmmTMB', 'magrittr', 'ggfortify'
 )
 
 invisible(lapply(packs, library, character.only = T))
@@ -34,7 +34,7 @@ rm(list=ls())
 setwd("...")
 
 # Read already z-transformed data
-df <- read.csv("df.csv", stringsAsFactors = F)
+df <- read.csv("LUCAS_data.csv", stringsAsFactors = F)
 
 # Number of samples per Land-use type
 count(df, LC_4)  
@@ -96,65 +96,50 @@ df$z.pca.text = get_pca_ind(z.pca.texture)$coord[,1]
   plot()
 
 #### > 2. Structural equation model ####
-#### >> 2.1 SEM structure ####
+#### >> 2.1. Model with interaction ####
+lucas.sem.interaction <- psem(
+  lm(z.pH ~ z.water.content + z.AnnualTemp * LC_5 + z.AnnualPrecip * LC_5 + z.Elevation + z.Latitude + z.pca.text, data = df),
+  lm(z.water.content ~ z.MonthlyMeanTemp + z.AnnualTemp * LC_5 + z.MonthlyPrecipSum + z.AnnualPrecip * LC_5 + z.Elevation + z.Latitude + z.pca.text, data = df),
+  lm(z.carbon ~ z.MonthlyMeanTemp + z.AnnualTemp * LC_5 + z.MonthlyPrecipSum + z.AnnualPrecip * LC_5  + z.Elevation + z.Latitude + z.pca.text + z.pH, data = df),
+  lm(z.meanFunction ~ z.water.content + z.MonthlyMeanTemp * LC_5 + z.AnnualTemp * LC_5 + z.MonthlyPrecipSum * LC_5 + z.AnnualPrecip * LC_5 + z.Elevation + z.Latitude  + z.pca.text + z.carbon + z.pH, data = df)
+)
 
-mod = '
-  z.pH ~ 
-        z.water.content + 
-        z.AnnualMeanTemp + z.AnnualPrecip + 
-        z.Elevation + z.Latitude + 
-        z.pca.text + LC_5 
-        
-  z.water.content ~
-        z.MonthlyMeanTemp + z.AnnualMeanTemp + 
-        z.MonthlyPrecipSum + z.AnnualPrecip  + 
-        z.Elevation + z.Latitude + 
-        LC_5 + z.pca.text + z.carbon
-        
-  z.carbon ~ 
-        z.MonthlyMeanTemp + z.AnnualMeanTemp + 
-        z.MonthlyPrecipSum + z.AnnualPrecip  + 
-        z.Elevation + z.Latitude + 
-        z.pca.text + LC_5 + z.pH
-        
-  z.meanFunction ~ 
-        z.water.content + 
-        z.MonthlyMeanTemp + z.AnnualMeanTemp + 
-        z.MonthlyPrecipSum + z.AnnualPrecip + 
-        z.Elevation + z.Latitude + 
-        z.pca.text + z.carbon + z.pH + LC_5
-'
+summary(lucas.sem.interaction)
 
-#### >> 2.2 Model fit ####
-sem.m.F = sem(model = mod, data = df)
+# Coefficients 
+a <- coefs(lucas.sem.interaction )
 
-# Summary 
-mod.sum <- summary(sem.m.F, standardized = T)
-standardizedsolution(sem.m.F)
+# Get R-squared
+rsquared(lucas.sem.interaction )
 
-# Check R2 values
-inspect(sem.m.F, 'R2')
+# Save results
+write.csv(a,"results-LUCAS_piecewise_interaction.csv", row.names = FALSE)
 
-# Check model quality 
-fitMeasures(sem.m.F)
+#### >> 2.2. Model without interaction ####
+lucas.sem <- psem(
+  lm(z.pH ~ z.water.content + z.AnnualTemp + z.AnnualPrecip + LC_5 + z.Elevation + z.Latitude + z.pca.text, data = df),
+  lm(z.water.content ~ z.MonthlyMeanTemp + z.AnnualTemp + LC_5 + z.MonthlyPrecipSum + z.AnnualPrecip + z.Elevation + z.Latitude + z.pca.text, data = df),
+  lm(z.carbon ~ z.water.content + z.MonthlyMeanTemp + z.AnnualTemp + z.MonthlyPrecipSum + z.AnnualPrecip + LC_5  + z.Elevation + z.Latitude + z.pca.text + z.pH, data = df),
+  lm(z.meanFunction ~ z.water.content + z.MonthlyMeanTemp + LC_5 + z.AnnualTemp + z.MonthlyPrecipSum + z.AnnualPrecip + z.Elevation + z.Latitude  + z.pca.text + z.carbon + z.pH, data = df)
+)
 
-# CFA analysis
-fit <- cfa(sem.m.F)
-f <- parameterEstimates(fit)
+summary(lucas.sem)
 
-#### > 3. Save results ####
-write.csv(mod.sum,"results-fig-2-LUCAS.csv", row.names = FALSE)
+# Coefficients 
+a <- coefs(lucas.sem)
 
-#### > 4. Plot ####
-# The plot was made manually using Inkshape
+# Get R-squared
+rsquared(lucas.sem)
+
+# Save results
+write.csv(a,"results-LUCAS_piecewise.csv", row.names = FALSE)
 
 #### GCEF analyses ####
-#### > 1. data handling ####
+#### > 3. data handling ####
 # Read already z-transformed data
-df1 <- read.csv("df-GCEF.csv", stringsAsFactors = F)
+df1 <- read.csv("GCEF_data.csv", stringsAsFactors = F)
 
-
-#### >> 1.1 Check endogenous variables individual model ####
+#### >> 3.1 Check endogenous variables individual model ####
 # Soil pH
 'z.pH ~ 
   z.water.content + 
@@ -183,36 +168,43 @@ df1 <- read.csv("df-GCEF.csv", stringsAsFactors = F)
   lm(., df) %>%
   plot()
 
-#### > 2. Structural equation model ####
-#### >> 2.1 SEM structure ####
+#### > 4. Structural equation model ####
+#### >> 4.1. Model with interaction ####
+gcef.sem.interaction.2 <- psem(
+  glmmTMB(z.pH ~ z.water.content + Clim * LC_5 + (1|Mainplot), data = df),
+  glmmTMB(z.water.content ~ z.carbon + Clim * LC_5, data = df),
+  glmmTMB(z.carbon ~ Clim * LC_5 + (1|Mainplot), data = df),
+  glmmTMB(z.meanFunction ~ z.water.content + z.carbon + z.pH + LC_5 * Clim + (1|Mainplot), data = df)
+)
 
-mod = '
-  z.pH ~ z.water.content + LC_5 + Clim 
-  z.water.content ~  z.carbon + LC_5 + Clim 
-  z.carbon ~ z.pH + LC_5 + Clim 
-  z.meanFunction ~ z.water.content + z.carbon + 
-                   z.pH + LC_5 + Clim 
-'
+# Summary
+summary(gcef.sem.interaction.2)
 
-#### >> 2.2 Model fit ####
-sem.m.F = sem(model = mod, data = df1)
-
-# Summary 
-mod.sum <- summary(sem.m.F, standardized = T)
-standardizedsolution(sem.m.F)
+# Coefficients 
+a <- coefs(gcef.sem.interaction.2)
 
 # Check R2 values
-inspect(sem.m.F, 'R2')
+rsquared(gcef.sem.interaction.2)
 
-# Check model quality 
-fitMeasures(sem.m.F)
+# Save results 
+write.csv(a,"results-GCEF_piecewise_interaction.csv", row.names = FALSE)
 
-# CFA analysis
-fit <- cfa(sem.m.F)
-f <- parameterEstimates(fit)
+#### >> 4.2. Model without interaction ####
+gcef.sem <- psem(
+  lmer(z.pH ~ z.water.content + Clim + LC_5 + (1|Mainplot), data = df),
+  lmer(z.water.content ~ Clim + LC_5 + (1|Mainplot), data = df),
+  lmer(z.carbon ~ z.water.content + Clim + LC_5 + (1|Mainplot), data = df),
+  lmer(z.meanFunction ~ z.water.content + z.carbon + z.pH + LC_5 + Clim + (1|Mainplot), data = df)
+)
 
-#### > 3. Save results ####
-write.csv(mod.sum,"results-fig-2-GCEF.csv", row.names = FALSE)
+# Summary
+summary(gcef.sem)
 
-#### > 4. Plot ####
+# Coefficients 
+a <- coefs(gcef.sem)
+
+# Check R2 values
+rsquared(gcef.sem)
+
+#### > 5. Plot ####
 # The plot was made manually using Inkshape
