@@ -18,11 +18,10 @@
 
 #### Packages ####
 libs <- c(
-  'dplyr', 'plyr',
-  'lavaan', 'factoextra',
+  'tidyverse',
+  'factoextra',
   'ggplot2', 'ggfortify', 
-  'performance', 'magrittr',
-  'lavaanPlot'
+  'magrittr'
 )
 
 invisible(lapply(libs, library, character.only = T))
